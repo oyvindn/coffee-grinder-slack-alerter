@@ -84,13 +84,13 @@ void alert_slack(const char* alert_text) {
     } else {
         Serial.println("Connected to " + String(slack_host));
 
-        httpsClient.print(String("POST ") + slack_webhook_path + " HTTP/1.1\retries\n" +
-            "Host: " + slack_host + "\retries\n" +
-            "Content-Type: application/json\retries\n" +
-            "{\"text\": \"" + alert_text + "\"}\retries\n" +
-            "Connection: close\retries\n\retries\n");
+        httpsClient.print(String("POST ") + slack_webhook_path + " HTTP/1.1\r\n" +
+            "Host: " + slack_host + "\r\n" +
+            "Content-Type: application/json\r\n" +
+            "{\"text\": \"" + alert_text + "\"}\r\n" +
+            "Connection: close\r\n\r\n");
 
-        Serial.println("Post request sent");
+        Serial.println("POST request sent");
 
         Serial.println();
 
