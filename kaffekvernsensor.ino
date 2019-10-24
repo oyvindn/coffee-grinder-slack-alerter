@@ -56,30 +56,60 @@ void loop() {
 }
 
 void sound_interrupt() {
-  sound_detected_since_last_check = true;
+    sound_detected_since_last_check = true;
 }
 
 void sound_trigger(int milliseconds_continuous_sound) {
     Serial.print("Alerting slack after ");
     Serial.print((float) milliseconds_continuous_sound / (float) 1000, 1);
     Serial.println(" seconds continuous sound");
-    alert_slack();
+
+    alert_slack("Kaffekverna ble kjørt. Forhåpentligvis blir det nytraktet kaffe å få om ca. 5 minutter!");
 }
 
-void alert_slack() {
-    IPAddress remote_addr;
-    WiFi.hostByName(host, remote_addr);
-    Serial.print("HTTPS Connecting " + remote_addr.toString());
-    int r=0; //retry counter
-    while((!httpsClient.connect(host, 443)) && (r < https_client_max_retries)){
-        delay(100);
+void alert_slack(const char* alert_text) {
+    Serial.print("Connecting to " + String(slack_host) + ":" + slack_port);
+
+    int retries = 0;
+    while((!httpsClient.connect(slack_host, slack_port)) && (retries < https_client_max_retries)){
         Serial.print(".");
-        r++;
+        retries++;
+        delay(100);
     }
+
     Serial.println();
-    if(r==https_client_max_retries) {
+
+    if(retries == https_client_max_retries) {
         Serial.println("Connection failed");
     } else {
-        Serial.println("Connected to slack");
+        Serial.println("Connected to " + String(slack_host));
+
+        httpsClient.print(String("POST ") + slack_webhook_path + " HTTP/1.1\retries\n" +
+            "Host: " + slack_host + "\retries\n" +
+            "Content-Type: application/json\retries\n" +
+            "{\"text\": \"" + alert_text + "\"}\retries\n" +
+            "Connection: close\retries\n\retries\n");
+
+        Serial.println("Post request sent");
+
+        Serial.println();
+
+        Serial.println("Reponse headers:");
+        String header_line = "";
+        while (httpsClient.connected() && header_line != "\r") {
+            header_line = httpsClient.readStringUntil('\n');
+            Serial.println(header_line);
+        }
+        Serial.println();
+
+        Serial.println("Reponse body:");
+        while (httpsClient.available()) {
+            String response_line = httpsClient.readStringUntil('\n');
+            Serial.println(response_line);
+        }
+
+        Serial.println();
+
+        Serial.println("Closing connection");
     }
 }
