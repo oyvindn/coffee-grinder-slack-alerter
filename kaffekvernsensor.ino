@@ -64,10 +64,10 @@ void sound_trigger(int milliseconds_continuous_sound) {
     Serial.print((float) milliseconds_continuous_sound / (float) 1000, 1);
     Serial.println(" seconds continuous sound");
 
-    alert_slack("Kaffekverna ble kjørt. Forhåpentligvis blir det nytraktet kaffe å få om ca. 5 minutter!");
+    alert_slack("Kaffekverna ble kjørt. Forhåpentligvis blir det nytraktet kaffe om ca. 5 minutter!");
 }
 
-void alert_slack(const char* alert_text) {
+void alert_slack(char* alert_text) {
     Serial.print("Connecting to " + String(slack_host) + ":" + slack_port);
 
     int retries = 0;
@@ -83,12 +83,23 @@ void alert_slack(const char* alert_text) {
         Serial.println("Connection failed");
     } else {
         Serial.println("Connected to " + String(slack_host));
+        Serial.println();
 
-        httpsClient.print(String("POST ") + slack_webhook_path + " HTTP/1.1\r\n" +
+        String body = String("{\"text\": \"") + alert_text + "\"}";
+        String payload = String("POST ") + slack_webhook_path + " HTTP/1.1\r\n" +
             "Host: " + slack_host + "\r\n" +
-            "Content-Type: application/json\r\n" +
-            "{\"text\": \"" + alert_text + "\"}\r\n" +
-            "Connection: close\r\n\r\n");
+            "Connection: close" + "\r\n" +
+            "Accept: */*" + "\r\n" +
+            "Content-Type: application/json" + "\r\n" +
+            "Content-Length: " + body.length() + "\r\n" +
+            "\r\n" +
+            body + "\r\n" +
+
+        Serial.println("Payload:");
+        Serial.println(payload);
+        Serial.println();
+
+        httpsClient.print(payload);
 
         Serial.println("POST request sent");
 
