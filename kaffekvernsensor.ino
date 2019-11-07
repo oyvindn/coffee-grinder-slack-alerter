@@ -60,7 +60,7 @@ void sound_detected_interrupt() {
     sound_detected_since_last_check = true;
 }
 
-void trigger_event(int milliseconds_continuous_sound) {
+void trigger_event(uint32_t milliseconds_continuous_sound) {
     Serial.print("Alerting slack after ");
     Serial.print((float) milliseconds_continuous_sound / (float) 1000, 1);
     Serial.println(" seconds of subsequent sound frames");
@@ -73,7 +73,7 @@ void trigger_event(int milliseconds_continuous_sound) {
 void alert_slack(char* alert_text) {
     Serial.print("Connecting to " + String(slack_host) + ":" + slack_port);
 
-    int retries = 0;
+    uint8_t retries = 0;
     while((!httpsClient.connect(slack_host, slack_port)) && (retries < https_client_max_retries)){
         Serial.print(".");
         retries++;
