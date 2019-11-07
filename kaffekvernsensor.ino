@@ -3,10 +3,10 @@
 #include <WiFiClientSecure.h>
 #include "config.h"
 
-void ICACHE_RAM_ATTR sound_interrupt();
+void ICACHE_RAM_ATTR sound_detected_interrupt();
 
 volatile bool sound_detected_since_last_check = false;
-uint8_t continuous_sound_count = 0;
+uint8_t subsequent_sound_frames_count = 0;
 
 WiFiClientSecure httpsClient;
 
@@ -20,7 +20,7 @@ void setup(){
 
     pinMode(analog_input, INPUT);
     pinMode(digital_input, INPUT);
-    attachInterrupt(digitalPinToInterrupt(digital_input), sound_interrupt, RISING);
+    attachInterrupt(digitalPinToInterrupt(digital_input), sound_detected_interrupt, RISING);
 }
 
 void connectToWifi() {
@@ -42,29 +42,32 @@ void connectToWifi() {
 }
 
 void loop() {
-    delay(sound_detection_period_in_milliseconds);
-    
+
     if(sound_detected_since_last_check) {
-        continuous_sound_count += 1;
+        subsequent_sound_frames_count += 1;
     } else {
-        if(continuous_sound_count > 6) {
-            sound_trigger(continuous_sound_count * sound_detection_period_in_milliseconds);
+        if(subsequent_sound_frames_count >= subsequent_sound_frames_trigger_count) {
+            trigger_event(subsequent_sound_frames_count * sound_detection_frame_duration_ms);
         }
-        continuous_sound_count = 0;
+        subsequent_sound_frames_count = 0;
     }
     sound_detected_since_last_check = false;
+
+    delay(sound_detection_frame_duration_ms);
 }
 
-void sound_interrupt() {
+void sound_detected_interrupt() {
     sound_detected_since_last_check = true;
 }
 
-void sound_trigger(int milliseconds_continuous_sound) {
+void trigger_event(int milliseconds_continuous_sound) {
     Serial.print("Alerting slack after ");
     Serial.print((float) milliseconds_continuous_sound / (float) 1000, 1);
-    Serial.println(" seconds continuous sound");
+    Serial.println(" seconds of subsequent sound frames");
 
-    alert_slack("Kaffekverna ble kjørt. Forhåpentligvis blir det nytraktet kaffe om ca. 5 minutter!");
+    delay(slack_alert_delay_ms);
+
+    alert_slack("Kaffekverna ble kjørt. Forhåpentligvis nytraktet kaffe å få om kort tid!");
 }
 
 void alert_slack(char* alert_text) {
